@@ -1,5 +1,7 @@
 import { ApolloServer, gql } from "apollo-server-micro";
+import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
 import { IResolvers } from "@graphql-tools/utils";
+import type { NextApiHandler } from "next";
 
 const typeDefs = gql`
   type Query {
@@ -10,7 +12,7 @@ const typeDefs = gql`
   }
 `;
 
-const resolvers: IResolvers<{ hello: "World" }, { someProp: "Hello" }> = {
+const resolvers: IResolvers = {
   Query: {
     users(parent, args, context) {
       return [{ name: "Nextjs" }];
@@ -18,33 +20,33 @@ const resolvers: IResolvers<{ hello: "World" }, { someProp: "Hello" }> = {
   },
 };
 
-const apolloServer = new ApolloServer({ typeDefs, resolvers });
+const apolloServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+  // Display old playground web app when opening http://localhost:3000/api/graphql in the browser
+  plugins: [
+    ...(process.env.NODE_ENV === "development"
+      ? [ApolloServerPluginLandingPageGraphQLPlayground]
+      : []),
+  ],
+});
 
-const startServer = apolloServer.start();
+// Now we need to start Apollo Server before creating the handler function.
+const serverStartPromise = apolloServer.start();
+let graphqlHandler: NextApiHandler | undefined;
 
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    "https://studio.apollographql.com"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  if (req.method === "OPTIONS") {
-    res.end();
-    return false;
+const handler: NextApiHandler = async (req, res) => {
+  if (!graphqlHandler) {
+    await serverStartPromise;
+    graphqlHandler = apolloServer.createHandler({ path: "/api/graphql" });
   }
 
-  await startServer;
-  await apolloServer.createHandler({
-    path: "/api/graphql",
-  })(req, res);
-}
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
+  return graphqlHandler(req, res);
 };
+
+// export const config = {
+//   api: {
+//     bodyParser: false,
+//   },
+// };
+export default handler;
