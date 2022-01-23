@@ -4,11 +4,31 @@ import { IResolvers } from "@graphql-tools/utils";
 import type { NextApiHandler } from "next";
 
 const typeDefs = gql`
+enum TaskStatus{
+  active
+  completed
+}
   type Query {
-    users: [User!]!
+  id: Int!
+  title: String!
+  status: TaskStatus!
+}
+input CreateTaskInput {
+  title: String!
+}
+input UpdateTaskInput {
+  id: Int!
+  title: String
+  status: TaskStatus
+}
+type Query {
+  tasks(status: TaskStatus): [Task!]!
+  task(id: Int!): Task
+}
   }
-  type User {
-    name: String
+  type Mutation {
+    createTask(input: CreateTaskInput!): Task
+    updateTask(input: UpdateTaskInput!): Task
   }
 `;
 
@@ -44,9 +64,9 @@ const handler: NextApiHandler = async (req, res) => {
   return graphqlHandler(req, res);
 };
 
-// export const config = {
-//   api: {
-//     bodyParser: false,
-//   },
-// };
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 export default handler;
