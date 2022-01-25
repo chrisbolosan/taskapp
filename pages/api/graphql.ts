@@ -75,14 +75,12 @@ const db = mysql({
     user: process.env.MYSQL_USER,
     database: process.env.MYSQL_DATABASE,
     password: process.env.MYSQL_PASSWORD,
-    port: 3306,
   },
 });
 
 const apolloServer = new ApolloServer({
   typeDefs,
   resolvers,
-  // Display old playground web app when opening http://localhost:3000/api/graphql in the browser
   plugins: [
     ...(process.env.NODE_ENV === "development"
       ? [ApolloServerPluginLandingPageGraphQLPlayground]
@@ -90,7 +88,6 @@ const apolloServer = new ApolloServer({
   ],
 });
 
-// Now we need to start Apollo Server before creating the handler function.
 const serverStartPromise = apolloServer.start();
 let graphqlHandler: NextApiHandler | undefined;
 
