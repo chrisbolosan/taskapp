@@ -2,6 +2,7 @@ import { ApolloServer, gql } from "apollo-server-micro";
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
 import { IResolvers } from "@graphql-tools/utils";
 import type { NextApiHandler } from "next";
+import mysql from "serverless-mysql";
 
 const typeDefs = gql`
   enum TaskStatus {
@@ -37,9 +38,18 @@ const typeDefs = gql`
   }
 `;
 
-const resolvers: IResolvers = {
+interface ApolloContext {
+  db: mysql.ServerlessMysql;
+}
+
+const resolvers: IResolvers<any, ApolloContext> = {
   Query: {
-    tasks(parent, args, context) {
+    async tasks(parent, args, context) {
+      const result = await context.db.query(
+        'SELECT "HELLO WORLD" as hello_world'
+      );
+      await db.end();
+      console.log({ result });
       return [];
     },
     task(parent, args, context) {
@@ -58,6 +68,16 @@ const resolvers: IResolvers = {
     },
   },
 };
+
+const db = mysql({
+  config: {
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    database: process.env.MYSQL_DATABASE,
+    password: process.env.MYSQL_PASSWORD,
+    port: 3306,
+  },
+});
 
 const apolloServer = new ApolloServer({
   typeDefs,
