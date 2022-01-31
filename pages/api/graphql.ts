@@ -75,12 +75,14 @@ const db = mysql({
     user: process.env.MYSQL_USER,
     database: process.env.MYSQL_DATABASE,
     password: process.env.MYSQL_PASSWORD,
+    port: 3306,
   },
 });
 
 const apolloServer = new ApolloServer({
   typeDefs,
   resolvers,
+  context: { db },
   plugins: [
     ...(process.env.NODE_ENV === "development"
       ? [ApolloServerPluginLandingPageGraphQLPlayground]
