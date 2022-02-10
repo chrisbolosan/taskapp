@@ -49,7 +49,6 @@ const resolvers: IResolvers<any, ApolloContext> = {
         'SELECT "HELLO WORLD" as hello_world'
       );
       await db.end();
-      console.log({ result });
       return [];
     },
     task(parent, args, context) {
