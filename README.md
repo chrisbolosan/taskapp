@@ -10,6 +10,37 @@ npm run dev
 yarn dev
 ```
 
+To set up the project, you need to create a docker-compose.yml file. You can use the following example as a starting point, but remember to replace the variables with your own values:
+
+version: "3.1"
+services:
+mysql:
+image: mysql:8.0
+command: --default-authentication-plugin=mysql_native_password
+restart: always
+environment:
+MYSQL_ROOT_PASSWORD: myrootpassword
+MYSQL_USER: development
+MYSQL_PASSWORD: development
+MYSQL_DATABASE: taskapp
+ports: - 127.0.0.1:3307:3306
+
+To start the Apollo Playground and access MySQL, you need to launch Docker Compose. Run the following command in your terminal:
+
+docker-compose up
+or
+docker-compose up -d (detached method)
+
+To initialize your MySQL database with the schema, enter the following command in your terminal:
+
+docker exec -i taskapp-mysql-1 sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" $MYSQL_DATABASE' < db/schema.sql
+
+Once everything is set up, you can access the Apollo Playground via your web browser at the following URL:
+
+http://localhost:3000/api/graphql
+
+This will allow you to interact with your GraphQL API.
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.

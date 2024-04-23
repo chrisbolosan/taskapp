@@ -37,19 +37,45 @@ const typeDefs = gql`
     deleteTask(id: Int!): Task
   }
 `;
+interface Task {
+  id: number;
+  title: string;
+  task_status: TaskStatus;
+}
+type TaskStatus = {
+  active: "ACTIVE";
+  completed: "COMPLETED";
+};
 
+type TasksDbRow = {
+  id: number;
+  title: string;
+  task_status: TaskStatus;
+};
+
+interface Task {
+  id: number;
+  title: string;
+  status: TaskStatus;
+}
+
+type TasksDbQueryResult = TasksDbRow[];
 interface ApolloContext {
   db: mysql.ServerlessMysql;
 }
 
 const resolvers: IResolvers<any, ApolloContext> = {
   Query: {
-    async tasks(parent, args, context) {
-      const result = await context.db.query(
-        'SELECT "HELLO WORLD" as hello_world'
+    async tasks(parent, args, context): Promise<Task[]> {
+      const tasks = await context.db.query<TasksDbQueryResult>(
+        "SELECT id, title, task_status FROM tasks"
       );
       await db.end();
-      return [];
+      return tasks.map(({ id, title, task_status }) => ({
+        id,
+        title,
+        status: task_status,
+      }));
     },
     task(parent, args, context) {
       return null;
@@ -74,6 +100,7 @@ const db = mysql({
     user: process.env.MYSQL_USER,
     database: process.env.MYSQL_DATABASE,
     password: process.env.MYSQL_PASSWORD,
+    port: 3307,
   },
 });
 
