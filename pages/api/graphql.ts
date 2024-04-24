@@ -3,6 +3,7 @@ import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-co
 import { IResolvers } from "@graphql-tools/utils";
 import type { NextApiHandler } from "next";
 import mysql from "serverless-mysql";
+import { OkPacket } from "mysql";
 
 const typeDefs = gql`
   enum TaskStatus {
@@ -42,10 +43,10 @@ interface Task {
   title: string;
   task_status: TaskStatus;
 }
-type TaskStatus = {
-  active: "ACTIVE";
-  completed: "COMPLETED";
-};
+enum TaskStatus {
+  active = "active",
+  completed = "completed",
+}
 
 type TasksDbRow = {
   id: number;
@@ -66,9 +67,22 @@ interface ApolloContext {
 
 const resolvers: IResolvers<any, ApolloContext> = {
   Query: {
-    async tasks(parent, args, context): Promise<Task[]> {
+    async tasks(
+      parent,
+      args: { status?: TaskStatus },
+      context
+    ): Promise<Task[]> {
+      const { status } = args;
+      let query = "SELECT id, title, task_status FROM tasks";
+      const queryParams: string[] = [];
+      if (status) {
+        query += " WHERE task_status = ?";
+        queryParams.push(status);
+      }
+      console.log(query, queryParams);
       const tasks = await context.db.query<TasksDbQueryResult>(
-        "SELECT id, title, task_status FROM tasks"
+        query,
+        queryParams
       );
       await db.end();
       return tasks.map(({ id, title, task_status }) => ({
@@ -82,8 +96,16 @@ const resolvers: IResolvers<any, ApolloContext> = {
     },
   },
   Mutation: {
-    createTask(parent, args, context) {
-      return null;
+    async createTask(parent, args: { input: { title: string } }, context) {
+      const result = await context.db.query<OkPacket>(
+        "INSERT INTO tasks (title, task_status) VALUES(?, ?)",
+        [args.input.title, TaskStatus.active]
+      );
+      return {
+        id: result.insertId,
+        title: args.input.title,
+        status: TaskStatus.active,
+      };
     },
     updateTask(parent, args, context) {
       return null;
