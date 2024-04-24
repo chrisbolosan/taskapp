@@ -1,9 +1,9 @@
 import { ApolloServer, gql } from "apollo-server-micro";
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
-import { IResolvers } from "@graphql-tools/utils";
 import type { NextApiHandler } from "next";
 import mysql from "serverless-mysql";
 import { OkPacket } from "mysql";
+import { Resolvers, TaskStatus } from "../../generated/graphql-backend";
 
 const typeDefs = gql`
   enum TaskStatus {
@@ -38,15 +38,6 @@ const typeDefs = gql`
     deleteTask(id: Int!): Task
   }
 `;
-interface Task {
-  id: number;
-  title: string;
-  task_status: TaskStatus;
-}
-enum TaskStatus {
-  active = "active",
-  completed = "completed",
-}
 
 type TasksDbRow = {
   id: number;
@@ -65,13 +56,9 @@ interface ApolloContext {
   db: mysql.ServerlessMysql;
 }
 
-const resolvers: IResolvers<any, ApolloContext> = {
+const resolvers: Resolvers<ApolloContext> = {
   Query: {
-    async tasks(
-      parent,
-      args: { status?: TaskStatus },
-      context
-    ): Promise<Task[]> {
+    async tasks(parent, args, context) {
       const { status } = args;
       let query = "SELECT id, title, task_status FROM tasks";
       const queryParams: string[] = [];
@@ -79,7 +66,6 @@ const resolvers: IResolvers<any, ApolloContext> = {
         query += " WHERE task_status = ?";
         queryParams.push(status);
       }
-      console.log(query, queryParams);
       const tasks = await context.db.query<TasksDbQueryResult>(
         query,
         queryParams
@@ -96,15 +82,15 @@ const resolvers: IResolvers<any, ApolloContext> = {
     },
   },
   Mutation: {
-    async createTask(parent, args: { input: { title: string } }, context) {
+    async createTask(parent, args, context) {
       const result = await context.db.query<OkPacket>(
         "INSERT INTO tasks (title, task_status) VALUES(?, ?)",
-        [args.input.title, TaskStatus.active]
+        [args.input.title, TaskStatus.Active]
       );
       return {
         id: result.insertId,
         title: args.input.title,
-        status: TaskStatus.active,
+        status: TaskStatus.Active,
       };
     },
     updateTask(parent, args, context) {
